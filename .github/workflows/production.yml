@@ -8,8 +8,8 @@ on:
     branches:
       - main
 env:
-    USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-    PASSWORD: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+    USERNAME: ${{ secrets.DOCKERHUB_USERNAME}}
+    PASSWORD: ${{ secrets.DOCKERHUB_TOKEN}}
 jobs:
   test:
     runs-on: ubuntu-latest
