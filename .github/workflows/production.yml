@@ -77,9 +77,8 @@ jobs:
           push: true
           tags: jgcapworh92/gutenberg-ingestion-api:${{ github.ref_name }} # Uses the branch name for tagging
           platforms: linux/amd64,linux/arm64 # Multi-platform support
-          cache-from: type=registry,ref=kaw393939/is690_summer2024:cache
+          cache-from: type=registry,ref=jgwentworth92/Gutenberg-Ingestion-API:cache
           cache-to: type=inline,mode=max
-          
       - name: Scan the Docker image
         uses: aquasecurity/trivy-action@master
         with:
