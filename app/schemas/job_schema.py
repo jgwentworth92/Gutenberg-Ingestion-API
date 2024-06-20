@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import uuid
 
@@ -35,9 +35,9 @@ class JobUpdate(BaseModel):
     user_id: Optional[uuid.UUID]
     updated_at: datetime
 
-    @validator('*', pre=True, always=True)
+    @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
-        return v or datetime.utcnow()
+        return v or datetime.now(timezone.utc)
 
 
 class JobResponse(JobBase):
@@ -56,7 +56,7 @@ class ResourceBase(BaseModel):
 
 
 class ResourceCreate(BaseModel):
-    user_id:str
+    user_id: str
     resource_type: str
     resource_data: dict
 
@@ -67,9 +67,9 @@ class ResourceUpdate(BaseModel):
     resource_data: Optional[dict]
     updated_at: datetime
 
-    @validator('*', pre=True, always=True)
+    @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
-        return v or datetime.utcnow()
+        return v or datetime.now(timezone.utc)
 
 
 class ResourceResponse(ResourceBase):
@@ -97,9 +97,9 @@ class DocumentUpdate(BaseModel):
     vector_db_id: Optional[str]
     updated_at: datetime
 
-    @validator('*', pre=True, always=True)
+    @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
-        return v or datetime.utcnow()
+        return v or datetime.now(timezone.utc)
 
 
 class DocumentResponse(DocumentBase):
@@ -127,9 +127,9 @@ class StepUpdate(BaseModel):
     step_type: Optional[StepType]
     updated_at: datetime
 
-    @validator('*', pre=True, always=True)
+    @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
-        return v or datetime.utcnow()
+        return v or datetime.now(timezone.utc)
 
 
 class StepResponse(StepBase):

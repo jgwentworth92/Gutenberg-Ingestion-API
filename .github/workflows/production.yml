@@ -7,7 +7,9 @@ on:
   pull_request:
     branches:
       - main
-
+env:
+    USERNAME: ${{ secrets.DOCKERHUB_USERNAME}}
+    PASSWORD: ${{ secrets.DOCKERHUB_TOKEN}}
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -66,22 +68,21 @@ jobs:
       - name: Log in to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ env.USERNAME }}
+          password: ${{ env.PASSWORD }}
           
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: jgcapworh92/gutenberg-ingestion-api:${{ github.ref_name }} # Uses the branch name for tagging
+          tags: jgcapworh92/gutenberg-ingestion-api:latest # Uses the branch name for tagging
           platforms: linux/amd64,linux/arm64 # Multi-platform support
-          cache-from: type=registry,ref=kaw393939/is690_summer2024:cache
+          cache-from: type=registry,ref=jgwentworth92/Gutenberg-Ingestion-API:cache
           cache-to: type=inline,mode=max
-          
       - name: Scan the Docker image
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'jgcapworh92/gutenberg-ingestion-api:${{ github.ref_name }}'
+          image-ref: 'jgcapworh92/gutenberg-ingestion-api:latest'
           format: 'table'
           exit-code: '1' # Fail the job if vulnerabilities are found
           ignore-unfixed: true
