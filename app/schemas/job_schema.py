@@ -122,10 +122,11 @@ class StepCreate(StepBase):
 
 
 class StepUpdate(BaseModel):
-    job_id: Optional[uuid.UUID]
-    status: Optional[StepStatus]
-    step_type: Optional[StepType]
-    updated_at: datetime
+    job_id: Optional[uuid.UUID] = None
+    status: Optional[StepStatus] = None
+    step_type: Optional[StepType] = None
+    updated_at: Optional[datetime] = None
+
 
     @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):

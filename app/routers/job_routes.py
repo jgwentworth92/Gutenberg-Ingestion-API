@@ -94,6 +94,12 @@ async def update_step(step_id: UUID, step_update: StepUpdate, db: AsyncSession =
     return StepResponse.model_construct(**updated_step.__dict__)
 
 
+@router.patch("/steps/{step_id}", response_model=StepResponse, tags=["Step Management"])
+async def update_step(step_id: UUID, step_update: StepUpdate, db: AsyncSession = Depends(get_db)):
+    updated_step = await JobService.update_step(db, step_id, step_update.dict(exclude_unset=True))
+    return StepResponse.model_construct(**updated_step.__dict__)
+
+
 @router.get("/jobs/user/{user_id}", response_model=List[JobResponse], tags=["Job Management"])
 async def get_all_jobs_by_user_id(user_id: UUID, db: AsyncSession = Depends(get_db)):
     jobs = await JobService.get_all_jobs_by_user_id(db, user_id)
