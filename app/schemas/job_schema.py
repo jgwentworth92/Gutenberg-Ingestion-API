@@ -20,8 +20,7 @@ class StepType(Enum):
 
 class JobBase(BaseModel):
     user_id: uuid.UUID
-    created_at: datetime
-    updated_at: datetime
+
 
     class Config:
         orm_mode = True
@@ -33,7 +32,7 @@ class JobCreate(JobBase):
 
 class JobUpdate(BaseModel):
     user_id: Optional[uuid.UUID]
-    updated_at: datetime
+
 
     @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
@@ -48,8 +47,7 @@ class ResourceBase(BaseModel):
     job_id: uuid.UUID
     resource_type: str
     resource_data: dict
-    created_at: datetime
-    updated_at: datetime
+
 
     class Config:
         orm_mode = True
@@ -65,7 +63,7 @@ class ResourceUpdate(BaseModel):
     job_id: Optional[uuid.UUID]
     resource_type: Optional[str]
     resource_data: Optional[dict]
-    updated_at: datetime
+
 
     @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
@@ -80,8 +78,7 @@ class DocumentBase(BaseModel):
     job_id: uuid.UUID
     collection_name: str
     vector_db_id: str
-    created_at: datetime
-    updated_at: datetime
+
 
     class Config:
         orm_mode = True
@@ -95,7 +92,7 @@ class DocumentUpdate(BaseModel):
     job_id: Optional[uuid.UUID]
     collection_name: Optional[str]
     vector_db_id: Optional[str]
-    updated_at: datetime
+
 
     @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
@@ -110,8 +107,7 @@ class StepBase(BaseModel):
     job_id: uuid.UUID
     status: StepStatus
     step_type: StepType
-    created_at: datetime
-    updated_at: datetime
+
 
     class Config:
         orm_mode = True
