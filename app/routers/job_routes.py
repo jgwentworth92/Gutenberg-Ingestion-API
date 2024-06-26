@@ -95,7 +95,7 @@ async def update_step(step_id: UUID, step_update: StepUpdate, db: AsyncSession =
 
 
 @router.patch("/steps/{step_id}", response_model=StepResponse, tags=["Step Management"])
-async def update_step(step_id: UUID, step_update: StepUpdate, db: AsyncSession = Depends(get_db)):
+async def patch_step(step_id: UUID, step_update: StepUpdate, db: AsyncSession = Depends(get_db)):
     updated_step = await JobService.update_step(db, step_id, step_update.dict(exclude_unset=True))
     return StepResponse.model_construct(**updated_step.__dict__)
 
