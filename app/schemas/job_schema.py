@@ -18,9 +18,11 @@ class StepType(Enum):
     DATAFLOW_TYPE_processing_llm = "data_processing_llm"
     DATAFLOW_TYPE_DATASINK = "data_sink"
 
+
 class JobBase(BaseModel):
     user_id: uuid.UUID
-
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         orm_mode = True
@@ -32,7 +34,7 @@ class JobCreate(JobBase):
 
 class JobUpdate(BaseModel):
     user_id: Optional[uuid.UUID]
-
+    updated_at: datetime = datetime.now(timezone.utc)
 
     @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
@@ -47,7 +49,8 @@ class ResourceBase(BaseModel):
     job_id: uuid.UUID
     resource_type: str
     resource_data: dict
-
+    created_at: datetime = datetime.now(timezone.utc)
+    updated_at: datetime = datetime.now(timezone.utc)
 
     class Config:
         orm_mode = True
@@ -64,7 +67,6 @@ class ResourceUpdate(BaseModel):
     resource_type: Optional[str]
     resource_data: Optional[dict]
 
-
     @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
         return v or datetime.now(timezone.utc)
@@ -78,8 +80,8 @@ class DocumentBase(BaseModel):
     job_id: uuid.UUID
     collection_name: str
     vector_db_id: str
-
-
+    created_at: datetime = datetime.now(timezone.utc)
+    updated_at: datetime = datetime.now(timezone.utc)
     class Config:
         orm_mode = True
 
@@ -92,7 +94,6 @@ class DocumentUpdate(BaseModel):
     job_id: Optional[uuid.UUID]
     collection_name: Optional[str]
     vector_db_id: Optional[str]
-
 
     @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
@@ -108,7 +109,6 @@ class StepBase(BaseModel):
     status: StepStatus
     step_type: StepType
 
-
     class Config:
         orm_mode = True
 
@@ -122,7 +122,6 @@ class StepUpdate(BaseModel):
     status: Optional[StepStatus] = None
     step_type: Optional[StepType] = None
     updated_at: Optional[datetime] = None
-
 
     @field_validator('updated_at', mode='before', check_fields=False)
     def set_updated_at(cls, v):
