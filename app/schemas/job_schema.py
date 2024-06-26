@@ -49,8 +49,8 @@ class ResourceBase(BaseModel):
     job_id: uuid.UUID
     resource_type: str
     resource_data: dict
-    created_at: datetime = datetime.now(timezone.utc)
-    updated_at: datetime = datetime.now(timezone.utc)
+    created_at:Optional[datetime] = datetime.now(timezone.utc)
+    updated_at: Optional[datetime] = datetime.now(timezone.utc)
 
     class Config:
         orm_mode = True
@@ -80,8 +80,8 @@ class DocumentBase(BaseModel):
     job_id: uuid.UUID
     collection_name: str
     vector_db_id: str
-    created_at: datetime = datetime.now(timezone.utc)
-    updated_at: datetime = datetime.now(timezone.utc)
+    created_at: Optional[datetime] = datetime.now(timezone.utc)
+    updated_at: Optional[datetime] = datetime.now(timezone.utc)
     class Config:
         orm_mode = True
 
