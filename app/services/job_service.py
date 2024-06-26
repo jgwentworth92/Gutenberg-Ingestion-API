@@ -160,6 +160,7 @@ class JobService:
             query = update(Step).where(Step.id == step_id).values(**validated_data).execution_options(
                 synchronize_session="fetch")
             await cls._execute_query(session, query)
+            await session.commit()
             updated_step = await cls.get_step_by_id(session, step_id)
             return updated_step
         except Exception as e:
