@@ -53,7 +53,16 @@ async def create_document(document: DocumentCreate, db: AsyncSession = Depends(g
     created_document = await JobService.create_document(db, document.dict())
     return DocumentResponse.model_construct(**created_document.__dict__)
 
+from typing import List
 
+@router.post("/documents/batch/", response_model=List[DocumentResponse], status_code=status.HTTP_201_CREATED,
+             tags=["Document Management"])
+async def create_multiple_documents(documents: List[DocumentCreate], db: AsyncSession = Depends(get_db)):
+    created_documents = []
+    for document in documents:
+        created_document = await JobService.create_document(db, document.dict())
+        created_documents.append(DocumentResponse.model_construct(**created_document.__dict__))
+    return created_documents
 @router.get("/documents/{document_id}", response_model=DocumentResponse, tags=["Document Management"])
 async def get_document(document_id: UUID, db: AsyncSession = Depends(get_db)):
     document = await JobService.get_document_by_id(db, document_id)
