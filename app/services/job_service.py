@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Sequence
 from pydantic import ValidationError
-from sqlalchemy import update, select, Row, RowMapping
+from sqlalchemy import update, select, Row, RowMapping, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.models.job_resource_document_models import Job, Resource, Step, Document
 from app.schemas.job_schema import JobCreate, JobUpdate, ResourceCreate, ResourceUpdate, StepCreate, StepUpdate, \
-    DocumentUpdate, DocumentCreate, StepType, StepStatus
+    DocumentUpdate, DocumentCreate, StepType, StepStatus, CollectionsInfoResponse, CollectionInfo
 from enum import Enum
 
 
@@ -234,3 +234,26 @@ class JobService:
         query = select(Document).filter_by(job_id=job_id)
         result = await cls._execute_query(session, query)
         return [document for document in result.scalars()]
+
+    @classmethod
+    async def get_collections_info(cls, session: AsyncSession, user_id: UUID) -> CollectionsInfoResponse:
+        query = (
+            select(
+                Document.collection_name,
+                func.array_agg(Document.vector_db_id).label('vector_db_ids'),
+                func.array_agg(Document.document_type).label('document_types')
+            )
+            .join(Job, Document.job_id == Job.id)
+            .filter(Job.user_id == user_id)
+            .group_by(Document.collection_name)
+        )
+        result = await cls._execute_query(session, query)
+        collections = [
+            CollectionInfo(
+                collection_name=row.collection_name,
+                vector_db_ids=row.vector_db_ids,
+                document_types=row.document_types
+            )
+            for row in result
+        ]
+        return CollectionsInfoResponse(collections=collections)

@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
-from typing import List, Dict
+from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.dependencies import get_db, require_role
 from app.schemas.job_schema import JobResponse, JobCreate, JobUpdate, ResourceResponse, ResourceCreate, ResourceUpdate, \
-    DocumentResponse, DocumentCreate, DocumentUpdate, StepCreate, StepResponse, StepUpdate
+    DocumentResponse, DocumentCreate, DocumentUpdate, StepCreate, StepResponse, StepUpdate, CollectionsInfoResponse
 from app.services.job_service import JobService
 
 router = APIRouter()
@@ -138,3 +138,10 @@ async def get_all_documents_by_job_id(job_id: UUID, db: AsyncSession = Depends(g
 async def get_all_documents_by_user_id(user_id: UUID, db: AsyncSession = Depends(get_db)):
     documents = await JobService.get_all_documents_by_user_id(db, user_id)
     return [DocumentResponse.model_construct(**document.__dict__) for document in documents]
+@router.get("/collections/user/{user_id}", response_model=CollectionsInfoResponse, tags=["Document Management"])
+async def get_collections_info(user_id: UUID, db: AsyncSession = Depends(get_db)):
+    """
+    Retrieve all collections' vector_db_id and document_type grouped by collections for a specific user.
+    """
+    collections_info = await JobService.get_collections_info(db, user_id)
+    return collections_info

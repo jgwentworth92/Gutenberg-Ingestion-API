@@ -71,10 +71,22 @@ class ResourceUpdate(BaseModel):
     def set_updated_at(cls, v):
         return v or datetime.now(timezone.utc)
 
+from enum import Enum
 
+class DocumentType(Enum):
+    RAW = "raw"
+    SUMMARY = "summary"
+    FINAL_SUMMARY = "final_summary"
 class ResourceResponse(ResourceBase):
     id: uuid.UUID
 
+class CollectionInfo(BaseModel):
+    collection_name: str
+    vector_db_ids: List[str]
+    document_types: List[DocumentType]
+
+class CollectionsInfoResponse(BaseModel):
+    collections: List[CollectionInfo]
 
 class DocumentBase(BaseModel):
     job_id: uuid.UUID
