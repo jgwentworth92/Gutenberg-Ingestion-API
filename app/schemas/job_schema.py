@@ -80,10 +80,13 @@ class DocumentType(Enum):
 class ResourceResponse(ResourceBase):
     id: uuid.UUID
 
+class DocumentMetadata(BaseModel):
+    vector_db_id: str
+    doc_type: DocumentType
+
 class CollectionInfo(BaseModel):
     collection_name: str
-    vector_db_ids: List[str]
-    document_types: List[DocumentType]
+    collection_metadata: List[DocumentMetadata]
 
 class CollectionsInfoResponse(BaseModel):
     collections: List[CollectionInfo]

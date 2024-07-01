@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.models.job_resource_document_models import Job, Resource, Step, Document
 from app.schemas.job_schema import JobCreate, JobUpdate, ResourceCreate, ResourceUpdate, StepCreate, StepUpdate, \
-    DocumentUpdate, DocumentCreate, StepType, StepStatus, CollectionsInfoResponse, CollectionInfo
+    DocumentUpdate, DocumentCreate, StepType, StepStatus, CollectionsInfoResponse, CollectionInfo, DocumentMetadata
 from enum import Enum
 
 
@@ -240,20 +240,28 @@ class JobService:
         query = (
             select(
                 Document.collection_name,
-                func.array_agg(Document.vector_db_id).label('vector_db_ids'),
-                func.array_agg(Document.document_type).label('document_types')
+                Document.vector_db_id,
+                Document.document_type
             )
             .join(Job, Document.job_id == Job.id)
             .filter(Job.user_id == user_id)
-            .group_by(Document.collection_name)
         )
         result = await cls._execute_query(session, query)
+
+        collections_dict = {}
+        for row in result:
+            if row.collection_name not in collections_dict:
+                collections_dict[row.collection_name] = []
+            collections_dict[row.collection_name].append(
+                DocumentMetadata(vector_db_id=row.vector_db_id, doc_type=row.document_type)
+            )
+
         collections = [
             CollectionInfo(
-                collection_name=row.collection_name,
-                vector_db_ids=row.vector_db_ids,
-                document_types=row.document_types
+                collection_name=collection_name,
+                collection_metadata=metadata
             )
-            for row in result
+            for collection_name, metadata in collections_dict.items()
         ]
+
         return CollectionsInfoResponse(collections=collections)
