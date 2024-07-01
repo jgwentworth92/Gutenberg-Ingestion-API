@@ -10,8 +10,8 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /myapp
 
-# Update system and specifically upgrade libc-bin to the required security patch version
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Update system and upgrade packages, including libsystemd0 and libudev1
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     && apt-get clean \
@@ -27,9 +27,10 @@ RUN python -m venv /.venv \
 # Define a second stage for the runtime, using the same Debian Bookworm slim image
 FROM python:3.12-slim-bookworm as final
 
-# Upgrade libc-bin in the final stage to ensure security patch is applied
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libc-bin \
+# Upgrade all packages, including libsystemd0 and libudev1
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+    libsystemd0 \
+    libudev1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
