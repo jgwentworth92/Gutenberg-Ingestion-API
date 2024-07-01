@@ -49,8 +49,8 @@ class ResourceBase(BaseModel):
     job_id: uuid.UUID
     resource_type: str
     resource_data: dict
-    created_at: datetime = datetime.now(timezone.utc)
-    updated_at: datetime = datetime.now(timezone.utc)
+    created_at:Optional[datetime] = datetime.now(timezone.utc)
+    updated_at: Optional[datetime] = datetime.now(timezone.utc)
 
     class Config:
         orm_mode = True
@@ -71,17 +71,33 @@ class ResourceUpdate(BaseModel):
     def set_updated_at(cls, v):
         return v or datetime.now(timezone.utc)
 
+from enum import Enum
 
+class DocumentType(Enum):
+    RAW = "RAW"
+    SUMMARY = "SUMMARY"
+    FINAL_SUMMARY = "FINAL_SUMMARY"
 class ResourceResponse(ResourceBase):
     id: uuid.UUID
 
+class DocumentMetadata(BaseModel):
+    vector_db_id: str
+    doc_type: DocumentType
+
+class CollectionInfo(BaseModel):
+    collection_name: str
+    collection_metadata: List[DocumentMetadata]
+
+class CollectionsInfoResponse(BaseModel):
+    collections: List[CollectionInfo]
 
 class DocumentBase(BaseModel):
     job_id: uuid.UUID
     collection_name: str
+    document_type: DocumentType
     vector_db_id: str
-    created_at: datetime = datetime.now(timezone.utc)
-    updated_at: datetime = datetime.now(timezone.utc)
+    created_at: Optional[datetime] = datetime.now(timezone.utc)
+    updated_at: Optional[datetime] = datetime.now(timezone.utc)
     class Config:
         orm_mode = True
 
@@ -92,6 +108,7 @@ class DocumentCreate(DocumentBase):
 
 class DocumentUpdate(BaseModel):
     job_id: Optional[uuid.UUID]
+    document_type:DocumentType
     collection_name: Optional[str]
     vector_db_id: Optional[str]
 

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from app.database import Base
 from enum import Enum
 
-from app.schemas.job_schema import StepType, StepStatus
+from app.schemas.job_schema import StepType, StepStatus, DocumentType
 
 
 # Add more step types as needed
@@ -60,6 +60,7 @@ class Document(Base):
     job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('jobs.id'), nullable=False)
     collection_name: Mapped[str] = Column(String(255), nullable=False)
     vector_db_id: Mapped[str] = Column(String(255), nullable=False)
+    document_type: Mapped[DocumentType] = mapped_column(SQLAlchemyEnum(DocumentType), nullable=True)
     created_at: Mapped[datetime] = Column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
