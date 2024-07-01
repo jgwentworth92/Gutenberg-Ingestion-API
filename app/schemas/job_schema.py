@@ -74,9 +74,9 @@ class ResourceUpdate(BaseModel):
 from enum import Enum
 
 class DocumentType(Enum):
-    RAW = "raw"
-    SUMMARY = "summary"
-    FINAL_SUMMARY = "final_summary"
+    RAW = "RAW"
+    SUMMARY = "SUMMARY"
+    FINAL_SUMMARY = "FINAL_SUMMARY"
 class ResourceResponse(ResourceBase):
     id: uuid.UUID
 
@@ -91,6 +91,7 @@ class CollectionsInfoResponse(BaseModel):
 class DocumentBase(BaseModel):
     job_id: uuid.UUID
     collection_name: str
+    document_type: DocumentType
     vector_db_id: str
     created_at: Optional[datetime] = datetime.now(timezone.utc)
     updated_at: Optional[datetime] = datetime.now(timezone.utc)
@@ -104,6 +105,7 @@ class DocumentCreate(DocumentBase):
 
 class DocumentUpdate(BaseModel):
     job_id: Optional[uuid.UUID]
+    document_type:DocumentType
     collection_name: Optional[str]
     vector_db_id: Optional[str]
 
