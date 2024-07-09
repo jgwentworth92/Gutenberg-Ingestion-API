@@ -154,6 +154,11 @@ class JobService:
             raise e
 
     @classmethod
+    async def get_step_by_job_id_and_type(cls, session: AsyncSession, job_id: UUID, step_type: StepType) -> Step:
+        query = select(Step).filter_by(job_id=job_id, step_type=step_type)
+        result = await cls._execute_query(session, query)
+        return result.scalars().first()
+    @classmethod
     async def update_step(cls, session: AsyncSession, step_id: UUID, update_data: Dict[str, str]) -> Step:
         try:
             validated_data = StepUpdate(**update_data).model_dump(exclude_unset=True)

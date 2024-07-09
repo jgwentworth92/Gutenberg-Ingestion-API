@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.dependencies import get_db, require_role
 from app.schemas.job_schema import JobResponse, JobCreate, JobUpdate, ResourceResponse, ResourceCreate, ResourceUpdate, \
-    DocumentResponse, DocumentCreate, DocumentUpdate, StepCreate, StepResponse, StepUpdate, CollectionsInfoResponse
+    DocumentResponse, DocumentCreate, DocumentUpdate, StepCreate, StepResponse, StepUpdate, CollectionsInfoResponse, \
+    StepType
 from app.services.job_service import JobService
 
 router = APIRouter()
@@ -105,7 +106,18 @@ async def update_step(step_id: UUID, step_update: StepUpdate, db: AsyncSession =
 async def patch_step(step_id: UUID, step_update: StepUpdate, db: AsyncSession = Depends(get_db)):
     updated_step = await JobService.update_step(db, step_id, step_update.dict(exclude_unset=True))
     return StepResponse.model_construct(**updated_step.__dict__)
-
+@router.put("/jobs/{job_id}/steps/{step_type}", response_model=StepResponse, tags=["Step Management"])
+async def update_step_by_job_id_and_type(
+        job_id: UUID, step_type: StepType, step_update: StepUpdate, db: AsyncSession = Depends(get_db)
+):
+    try:
+        step = await JobService.get_step_by_job_id_and_type(db, job_id, step_type)
+        if not step:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step not found")
+        updated_step = await JobService.update_step(db, step.id, step_update.dict(exclude_unset=True))
+        return StepResponse.model_construct(**updated_step.__dict__)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @router.get("/jobs/user/{user_id}", response_model=List[JobResponse], tags=["Job Management"])
 async def get_all_jobs_by_user_id(user_id: UUID, db: AsyncSession = Depends(get_db)):

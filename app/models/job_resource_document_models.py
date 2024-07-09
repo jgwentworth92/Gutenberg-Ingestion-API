@@ -1,6 +1,6 @@
 # job_resource_document_models.py
 
-from sqlalchemy import Column, ForeignKey, String, Integer, DateTime, JSON, Enum as SQLAlchemyEnum, func
+from sqlalchemy import Column, ForeignKey, String, Integer, DateTime, JSON, Enum as SQLAlchemyEnum, func, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import uuid
@@ -25,7 +25,7 @@ class Job(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     created_at: Mapped[datetime] = Column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
+    status: Mapped[bool] = Column(Boolean, default=False)
     user = relationship("User", back_populates="jobs")
     resources = relationship("Resource", back_populates="job", lazy='dynamic', cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="job", lazy='dynamic', cascade="all, delete-orphan")
