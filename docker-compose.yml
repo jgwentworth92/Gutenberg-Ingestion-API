@@ -1,5 +1,4 @@
-version: '3.8'
-
+version: "3"
 services:
   kafka_b:
     image: bitnami/kafka:latest
@@ -8,7 +7,7 @@ services:
       - "9092:9092"
       - "9094:9094"
     volumes:
-      - "kafka_data:/bitnami"
+      - kafka_data:/bitnami
     environment:
       - KAFKA_ENABLE_KRAFT=yes
       - KAFKA_CFG_PROCESS_ROLES=broker,controller
@@ -23,46 +22,59 @@ services:
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
       - KAFKA_CFG_NUM_PARTITIONS=3
     healthcheck:
-      test: [ "CMD", "sh", "-c", "unset JMX_PORT; kafka-topics.sh --bootstrap-server localhost:9092 --list" ]
+      test: ["CMD", "sh", "-c", "unset JMX_PORT; kafka-topics.sh --bootstrap-server localhost:9092 --list"]
       interval: 10s
       timeout: 10s
       retries: 5
-    networks:
-      - app-network
+
+  init-topics:
+    image: bitnami/kafka:latest
+    container_name: init_topics
+    command: >
+      sh -c "
+        /opt/bitnami/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka_b:9094 --replication-factor 1 --partitions 3 --topic ${OUTPUT_TOPIC} &&
+        /opt/bitnami/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka_b:9094 --replication-factor 1 --partitions 3 --topic ${GITHUB_TOPIC}  &&
+        /opt/bitnami/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka_b:9094 --replication-factor 1 --partitions 3 --topic ${VECTORDB_TOPIC_NAME} &&
+        /opt/bitnami/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka_b:9094 --replication-factor 1 --partitions 3 --topic ${PDF_INPUT} &&
+        /opt/bitnami/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka_b:9094 --replication-factor 1 --partitions 3 --topic ${PROCESSED_TOPIC} &&
+        /opt/bitnami/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka_b:9094 --replication-factor 1 --partitions 3 --topic ${RESOURCE_TOPIC}
+      "
+    depends_on:
+      kafka_b:
+        condition: service_healthy
+
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
     depends_on:
-      kafka_b:
-        condition: service_healthy
+      init-topics:
+        condition: service_completed_successfully
     ports:
       - 8080:8080
     environment:
       DYNAMIC_CONFIG_ENABLED: 'true'
     volumes:
       - ./kui/config.yml:/etc/kafkaui/dynamic_config.yaml
-    networks:
-      - app-network
+
   postgres:
     image: postgres:16.2
     environment:
-      POSTGRES_DB: myappdb
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
     command:
       - "postgres"
       - "-c"
       - "wal_level=logical"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d myappdb"]
+      test:  [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - app-network
     volumes:
       - postgres-data:/var/lib/postgresql/data
-
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -75,21 +87,25 @@ services:
       - "5050:80"
     volumes:
       - pgadmin-data:/var/lib/pgadmin
-    networks:
-      - app-network
 
   fastapi:
     build: .
-    volumes:
-      - ./:/myapp/
+    container_name:   fastapi
+    environment:
+      smtp_username: "${smtp_username}"
+      smtp_password: "${smtp_password}"
+      postgres_user: "${POSTGRES_USER}"
+      postgres_password: "${POSTGRES_PASSWORD}"
+      postgres_port: "${POSTGRES_PORT}"
+      postgres_db: "${POSTGRES_DB}"
+      postgres_server: "${POSTGRES_HOSTNAME}"
     ports:
       - 8000:8000
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - app-network
     restart: always
+
   debezium:
     image: debezium/connect:2.6.2.Final
     hostname: debezium
@@ -98,6 +114,7 @@ services:
     depends_on:
       - kafka_b
       - postgres
+      - fastapi
     environment:
       BOOTSTRAP_SERVERS: kafka_b:9094
       GROUP_ID: 1
@@ -109,20 +126,13 @@ services:
       CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_REST_ADVERTISED_HOST_NAME: "debezium"
-      CONNECT_CONFIG_PROVIDERS: "file"
-      CONNECT_CONFIG_PROVIDERS_FILE_CLASS: "org.apache.kafka.common.config.provider.FileConfigProvider"
-      POSTGRES_HOSTNAME: "postgres"
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: myappdb
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    entrypoint: /kafka/debezium-setup/setup.sh
-    user: root
-    volumes:
-      - ./debezium-setup:/kafka/debezium-setup:ro
-      - ./debezium-setup/secrets:/secrets
-    networks:
-      - app-network
+      CONNECT_CONFIG_PROVIDERS: 'env'
+      CONNECT_CONFIG_PROVIDERS_ENV_CLASS: 'org.apache.kafka.common.config.provider.EnvVarConfigProvider'
+      POSTGRES_HOSTNAME: ${POSTGRES_HOSTNAME}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/"]
       interval: 30s
@@ -137,14 +147,11 @@ services:
     entrypoint: /kafka/debezium-setup/init-connector-config.sh
     volumes:
       - ./debezium-setup:/kafka/debezium-setup:ro
-    networks:
-      - app-network
+
 volumes:
-  postgres-data:
-  pgadmin-data:
+  qdrant-storage:
+    driver: local
   kafka_data:
     driver: local
-
-
-networks:
-  app-network:
+  postgres-data:
+  pgadmin-data:
