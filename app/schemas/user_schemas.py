@@ -31,6 +31,7 @@ class UserBase(BaseModel):
     _validate_urls = validator('profile_picture_url', 'linkedin_profile_url', 'github_profile_url', pre=True, allow_reuse=True)(validate_url)
  
     class Config:
+        orm_mode = True
         from_attributes = True
 
 class UserCreate(UserBase):
