@@ -1,81 +1,82 @@
-import asyncio
-from datetime import datetime, timezone, timedelta
-from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Request, status, Body, WebSocket, WebSocketDisconnect, status
-from sqlalchemy.ext.asyncio import AsyncSession
+import logging
+from datetime import datetime, timedelta
+from typing import List, Dict
 from uuid import UUID
-from app.dependencies import get_db, require_role
-from app.schemas.job_schema import JobResponse, JobCreate, JobUpdate, ResourceResponse, ResourceCreate, ResourceUpdate, \
+
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.dependencies import get_db
+from app.schemas.job_schema import JobResponse, ResourceResponse, ResourceCreate, ResourceUpdate, \
     DocumentResponse, DocumentCreate, DocumentUpdate, StepCreate, StepResponse, StepUpdate, CollectionsInfoResponse, \
-    StepType, StepBase, StepStatus
+    StepType, StepStatus
 from app.services.job_service import JobService
+
 active_connections: Dict[UUID, WebSocket] = {}
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
 # Set the timeout duration
 router = APIRouter()
 # Set the timeout duration
 TIMEOUT_MINUTES = 5  # Set the timeout duration
 
+
 @router.websocket("/ws/resource/{job_id}")
-async def websocket_resource_status(websocket: WebSocket, job_id: UUID, db: AsyncSession = Depends(get_db)):
+async def websocket_resource_status(
+        websocket: WebSocket,
+        job_id: UUID,
+        db: AsyncSession = Depends(get_db)  # Injecting db dependency
+):
     await websocket.accept()
+
     start_time = datetime.now()
 
     try:
         while True:
+            # Use your existing CRUD functions to get job and steps
             job = await JobService.get_job_by_id(db, job_id)
             if not job:
                 await websocket.send_json({"error": "Job not found"})
                 break
 
             steps = await JobService.get_all_steps_by_job_id(db, job_id)
-
             status_update = {
                 "job_id": str(job.id),
                 "status": job.status,
                 "steps": [
                     {
-                        "step_type": step.step_type,
-                        "status": step.status,
-                        "total_documents": step.total_documents,
-                        "processed_documents": step.processed_documents,
-                        "error_info": step.error_info
+                        "step_type": str(step.step_type.value),
+                        "status": str(step.status.value),
                     } for step in steps
                 ]
             }
 
             await websocket.send_json(status_update)
 
-            # Check if all steps are completed
-            all_completed = all(step.status == StepStatus.COMPLETE for step in steps)
-
-            # Check if any step has failed
-            any_failed = any(step.status == StepStatus.FAILED for step in steps)
-
-            # Check for timeout
-            time_elapsed = datetime.now() - start_time
-            is_timeout = time_elapsed > timedelta(minutes=TIMEOUT_MINUTES)
-
-            if all_completed:
+            # Check status conditions
+            if all(step.status == StepStatus.COMPLETE for step in steps):
                 await websocket.send_json({"message": "All steps completed"})
                 break
-            elif any_failed:
-                await websocket.send_json({"message": "Job failed", "failed_steps": [step.step_type for step in steps if
-                                                                                     step.status == StepStatus.FAILED]})
+            elif any(step.status == StepStatus.FAILED for step in steps):
+                await websocket.send_json({
+                    "message": "Job failed",
+                    "failed_steps": [
+                        step.step_type for step in steps if step.status == StepStatus.FAILED
+                    ]
+                })
                 break
-            elif is_timeout:
+            elif datetime.now() - start_time > timedelta(minutes=TIMEOUT_MINUTES):
                 await websocket.send_json({"message": "Job timed out"})
                 break
 
-            # Wait for 5 seconds before the next update
-            await asyncio.sleep(5)
-
     except WebSocketDisconnect:
-        print(f"WebSocket disconnected for job {job_id}")
+        logging.error(f"WebSocket disconnected for job {job_id}")
     except Exception as e:
+        logging.error(f"Error occurred: {e}")
         await websocket.send_json({"error": str(e)})
     finally:
-        print(f"Closing WebSocket connection for job {job_id}")
         await websocket.close()
+
 
 @router.get("/jobs/{job_id}", response_model=JobResponse, tags=["Job Management"])
 async def get_job(job_id: UUID, db: AsyncSession = Depends(get_db)):
@@ -230,4 +231,3 @@ async def get_collections_info(user_id: UUID, db: AsyncSession = Depends(get_db)
     """
     collections_info = await JobService.get_collections_info(db, user_id)
     return collections_info
-
