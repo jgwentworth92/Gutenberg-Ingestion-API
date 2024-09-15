@@ -107,8 +107,10 @@ class UserService(DbService):
             raise InvalidCredentialsException("Incorrect email or password.")
         if user.is_locked:
             raise AccountLockedException("Account locked due to too many failed login attempts.")
+        """
         if not user.email_verified:
             raise InvalidCredentialsException("Email not verified.")
+        """
         if not verify_password(password, user.hashed_password):
             user.failed_login_attempts += 1
             if user.failed_login_attempts >= settings.max_login_attempts:
