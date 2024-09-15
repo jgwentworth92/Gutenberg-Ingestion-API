@@ -8,7 +8,7 @@ import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_current_user, get_db, get_email_service, require_role
 from app.schemas.token_schema import TokenResponse
-from app.schemas.user_schemas import UserCreate, UserListResponse, UserResponse, UserUpdate
+from app.schemas.user_schemas import UserCreate, UserListResponse, UserResponse, UserUpdate, UserBase
 from app.services.user_service import UserService
 from app.services.jwt_service import create_access_token
 from app.utils.link_generation import create_user_links, generate_pagination_links
@@ -204,8 +204,9 @@ async def login(
     try:
         user = await UserService.login_user(session, form_data.username, form_data.password)
         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+        user_data = UserBase.from_orm(user)
         access_token = create_access_token(
-            data={"sub": user.email, "role": str(user.role.name), "user_id": str(user.id)},
+            data={"sub": user.email, "role": str(user.role.name), "user_id": str(user.id), "user":user_data.model_dump_json()},
             expires_delta=access_token_expires
         )
         # Immediately decode to verify
