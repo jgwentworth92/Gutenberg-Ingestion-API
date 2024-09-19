@@ -4,11 +4,17 @@ from fastapi import Depends, HTTPException, Header, Cookie, Depends, HTTPExcepti
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import Database
+from app.services.GlobalListener_service import IGlobalListener, get_global_listener
 from app.utils.template_manager import TemplateManager
 from app.services.email_service import EmailService
 from app.services.jwt_service import decode_token
 from settings.config import Settings
 from sqlalchemy.exc import SQLAlchemyError
+
+from app.services.job_service import JobService
+from app.services.resource_service import ResourceService
+from app.services.step_service import StepService
+from app.services.document_service import DocumentService
 
 def get_settings() -> Settings:
     """Return application settings."""
@@ -69,3 +75,20 @@ def require_role(roles: list[str]):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Operation not permitted")
         return current_user
     return role_checker
+
+
+def get_global_listener_dependency() -> IGlobalListener:
+    return get_global_listener()
+
+
+def get_job_service() -> JobService:
+    return JobService()
+
+def get_resource_service() -> ResourceService:
+    return ResourceService()
+
+def get_step_service() -> StepService:
+    return StepService()
+
+def get_document_service() -> DocumentService:
+    return DocumentService()
